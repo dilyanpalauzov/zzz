@@ -1,0 +1,1 @@
+1035368418.577,776,210.8.79.228,TCP_MISS/200,4797,GET,"http://www.usnews.com/RealMedia/ads/adstream_mjx.ads/www.usnews.com/nl-search/we/Archives/1272003260@Top1,Bottom1,Left1,Left2,Middle1,Right1,Right2,Right3,Right4?",-,DIRECT/64.14.118.196,application/x-javascript

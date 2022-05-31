@@ -1,0 +1,66 @@
+Remarks:
+
+The task descritpion states the input contains IP addresses in the “client IP address” and in the “Type of access/destination IP address” fields.  The provided input at https://www.secrepo.com/squid/access.log.gz contains however in the ”Type of access/destination IP address” field sometimes a host name, instead of an IP address.
+
+The operations “most frequent IP” and “least frequent IP” must be implemented.  It is unclear, whether these operations shall consider only the Client IP, only the ”Destination IP” or both.  Moreover, if the destination IP is a hostname, and the hostname resolves to several IP addresses, it is unclear how to count that many IP addresses in the “most/least frequent IP” operation.  That said, the provided implementation counts only the “Client IP” for the “most/least freqeunt IP” operations.
+
+The “Client IP” address is not validated to have an IP-address form, it is used as-is.
+
+In case there are several IP addresses, all of which are equally most/least frequently used, it is unclear whether all shall be emitted, or only one of them.  In such cases this code emits only one IP address.
+
+The task description says the input is in CSV (comma separated value) format, the provided input and the description of the input assume the input is space separated values. Albeit as consideration is written, that different log formats might be supported in the future.  Without doing overengineering, the function parse_line() checks for each line in the input if it contains a space.  In such cases it assumes the input line is space-separated values, otherwise it assumes the input is comma-separated values.  The file csv.txt contains an example of such CSV-input, which can be passed to parse_line().  The description says concerning the input, that after the second value data is separated by a space, but does not say how are first and second data separated.  The function parse_line() skips lines, if they cannot be parsed, e.g. in the line below the response size in bytes cannot be -1::
+1335567781 41 127.0.0.1 TCP_MISS/200 -1 GET http://www4.wiwiss.fu-berlin.de/sider/sparql?query=DESCRIBE+%3Chttp://sideeffects.embl.de/se/C0035304%3E - NONE/- application/rdf+xml
+
+Each line of the input has a timestamp and the operation “events per second” is to be implemented.  If the input spans data over several seconds, it is unclear from the description, whether the output of the operation shall be one output data for each second, when data was collected, or one output data for the whole input.  This implementation assumes that the output is a single number for the whole interval.  Moreover, the “events per second” value does increase, when for some seconds - time gaps in the input -  there are no actions.
+
+The operations are put into classes, so adding a new operation is a matter of implementing a new class.  The output for each operation is in the Operation.result() method.  The tiny function produce_output() converts the results in JSON format.  It is easy to add other output formats, but no overengineering is done here to provide abstactions for several output formats.
+
+Usage Example:
+
+After --input follow one or more files or directories.  Directories are not scanned recursively
+
+./zzz.py --input access.log csv.txt --output x.out --most-frequent-ip --least-frequent-ip --events-per-second --total-amount-of-bytes
+
+How to handle Dockerfile?
+
+$ buildah build
+STEP 1/4: FROM python:3.7-slim-buster
+STEP 2/4: COPY zzz.py /usr/bin
+STEP 3/4: ENTRYPOINT ["/usr/bin/zzz.py"]
+STEP 4/4: VOLUME /data
+COMMIT
+Getting image source signatures
+Copying blob 10e6bc6fdee2 skipped: already exists  
+Copying blob 4bdae028fbe3 skipped: already exists  
+Copying blob 014b97cc5ddc skipped: already exists  
+Copying blob 81d79ac7ea8c skipped: already exists  
+Copying blob aba26e1f78f7 skipped: already exists  
+Copying blob f793907a21c0 done  
+Copying config b3c0619c00 done  
+Writing manifest to image destination
+Storing signatures
+--> b3c0619c00f
+b3c0619c00fa18414057828007981c1106f005b1aac58ee4fb79413ec5b6a9ee
+
+
+$ podman run --rm=true --read-only=true --mount type=bind,src=.,dst=/data,relabel=private --security-opt=no-new-privileges b3c0619c0 --help
+
+usage: zzz.py [-h] [--input INPUT [INPUT ...]] [--most-frequent-ip]
+              [--least-frequent-ip] [--events-per-second]
+              [--total-amount-of-bytes] [--output OUTPUT]
+
+Analyze log files
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --input INPUT [INPUT ...]
+                        Path to log file(s) or a directory with log files
+  --most-frequent-ip    Extract the most frequest IP address
+  --least-frequent-ip   Extract the least frequest IP address
+  --events-per-second   Print events per second
+  --total-amount-of-bytes
+                        Total amount of bytes exchanged
+  --output OUTPUT       Output JSON file location
+
+# assuming the current directory — . — contains a file «access.log»
+$ podman run --rm=true --read-only=true --mount type=bind,src=.,dst=/data,relabel=private --security-opt=no-new-privileges b3c0619c0 --input /data/access.log --output /data/x.out --most-frequent-ip --least-frequent-ip --events-per-second --total-amount-of-bytes
